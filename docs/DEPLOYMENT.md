@@ -15,7 +15,7 @@ Create an Atlas database user and allow the hosting provider's connection access
    - Start command: `npm start`
 4. Add `MONGODB_URI` and `JWT_SECRET` as secret environment variables.
 5. In Render, open the service's **Connect → Outbound** tab and add the displayed outbound CIDR ranges to MongoDB Atlas Network Access. Do not use the laptop IP for the deployed service. Dedicated fixed egress IPs are a paid option.
-6. The included `render.yaml` declares a 1 GB persistent disk mounted at `/opt/render/project/src/uploads`. The upload folder is private and is never served as static content. If your Render plan does not support disks, replace it with a durable object-storage adapter before accepting production resumes.
+6. The included `render.yaml` uses Render's free web-service plan, so no payment method is needed for the demo deployment. Free services have ephemeral storage: uploaded resumes remain private but can be removed when Render restarts or redeploys the service. For production resume retention, attach a paid persistent disk or replace local uploads with durable object storage such as S3-compatible storage.
 7. Open the generated service URL. The frontend and API share the same origin.
 
 ## Local production check
