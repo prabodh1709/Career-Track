@@ -1,0 +1,15 @@
+CareerTrack Deployment Links
+
+Public job portal:
+https://careertrack-gesy.onrender.com
+
+Backend API base:
+https://careertrack-gesy.onrender.com/api
+
+API health check:
+https://careertrack-gesy.onrender.com/api/health
+
+Owner/admin dashboard:
+https://careertrack-gesy.onrender.com/admin
+
+Note: The owner dashboard requires a safe administrator demo account. Never publish its password or database credentials in the repository.
