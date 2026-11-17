@@ -24,8 +24,14 @@ const app = express();
 dotenv.config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') });
 const port = Number(process.env.PORT || 5000);
 const configuredOrigins = String(process.env.CLIENT_URL || '').split(',').map((item) => item.trim()).filter(Boolean);
+const localOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174'];
 app.use(helmet());
-app.use(cors({ origin: configuredOrigins.length ? (origin, callback) => (!origin || configuredOrigins.includes(origin) ? callback(null, true) : callback(new Error('CORS origin denied'))) : false }));
+app.use(cors({ origin: (origin, callback) => {
+  const developmentFile = process.env.NODE_ENV !== 'production' && (origin === 'null' || origin?.startsWith('file://'));
+  const developmentLocalhost = process.env.NODE_ENV !== 'production' && localOrigins.includes(origin);
+  if (!origin || configuredOrigins.includes(origin) || developmentFile || developmentLocalhost) return callback(null, true);
+  return callback(new Error('CORS origin denied'));
+} }));
 app.use(express.json());
 app.use((req, _res, next) => { if (req.body && typeof req.body === 'object') req.body = sanitizeMongoInput(req.body); next(); });
 app.use(morgan('dev'));
