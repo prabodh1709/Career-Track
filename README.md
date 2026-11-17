@@ -56,11 +56,11 @@ Never commit `.env`, database credentials, JWT secrets, uploaded resumes, or pro
 
 ## Production deployment
 
-The project can be deployed as one Node.js service. Express serves `frontend/dist` and the API remains available under `/api`. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) and the included `render.yaml`.
+The project can be deployed as one Node.js service. Express serves `frontend/dist` and the API remains available under `/api`. The included `render.yaml` is configured for Render's free plan. Add `MONGODB_URI` and `JWT_SECRET` as deployment secrets, then allow the Render service outbound CIDR ranges in MongoDB Atlas.
 
-API reference: [docs/API_Documentation.md](docs/API_Documentation.md).
+API reference: [docs/API_Documentation.pdf](docs/API_Documentation.pdf).
 
-Test plan: [docs/TEST_CASES.md](docs/TEST_CASES.md).
+Test plan: [docs/Test_Cases.xlsx](docs/Test_Cases.xlsx).
 
 The public homepage provides live search, location/type/experience filters, sorting, saved jobs, hide/reset actions and load-more pagination. Job details include salary, dates, responsibilities, qualifications, skills, benefits and application instructions. Candidate profiles include preferences, Open to Work, professional links and private PDF/DOCX resume upload. Candidates can apply without registration, employers can manage their own hiring workflows, and owner-level administrators can control every account, job and application with search, filters, edit controls, pagination and CSV export.
 
@@ -70,5 +70,13 @@ Submission documents:
 - [Database_Schema.pdf](docs/Database_Schema.pdf)
 - [Test_Cases.xlsx](docs/Test_Cases.xlsx)
 - [Project_Report.pdf](docs/Project_Report.pdf)
+
+Live demonstration:
+
+- Public portal: `https://careertrack-gesy.onrender.com`
+- API health: `https://careertrack-gesy.onrender.com/api/health`
+- Owner dashboard: `https://careertrack-gesy.onrender.com/admin`
+
+For the final demonstration, use a safe demo account and never publish its password, database credentials, JWT secrets, uploaded resumes or other private candidate information.
 
 
