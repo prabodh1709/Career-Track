@@ -1,0 +1,34 @@
+import { Router } from 'express';
+import Application from '../models/Application.js';
+import Job from '../models/Job.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { upload, uploadDir } from '../middleware/upload.js';
+import { existsSync } from 'fs';
+import { isAbsolute, resolve } from 'path';
+const router = Router();
+router.get('/mine', requireAuth, async (req, res, next) => { try { res.json({ success: true, applications: await Application.find({ candidate: req.user.id }).populate('job').sort({ createdAt: -1 }) }); } catch (error) { next(error); } });
+router.get('/received', requireAuth, async (req, res, next) => { try { const jobs = await Job.find({ owner: req.user.id }).select('_id title company'); const applications = await Application.find({ job: { $in: jobs.map((job) => job._id) } }).populate('job', 'title company').populate('candidate', 'name email phone headline skills education experience').sort({ createdAt: -1 }); res.json({ success: true, applications }); } catch (error) { next(error); } });
+router.get('/:id/resume', requireAuth, async (req, res, next) => { try { const application = await Application.findById(req.params.id).populate('job', 'owner title'); if (!application || !application.job) return res.status(404).json({ success: false, message: 'Application not found' }); const canView = req.user.role === 'admin' || String(application.job.owner) === String(req.user.id) || String(application.candidate) === String(req.user.id); if (!canView) return res.status(403).json({ success: false, message: 'You are not allowed to view this resume' }); const storedName = application.resumeUrl.replace(/^uploads[\\/]/, ''); const filePath = isAbsolute(application.resumeUrl) ? application.resumeUrl : resolve(uploadDir, storedName); if (!existsSync(filePath)) return res.status(404).json({ success: false, message: 'Resume file is no longer available' }); res.download(filePath, `${application.candidateName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-resume`); } catch (error) { next(error); } });
+router.patch('/:id/status', requireAuth, async (req, res, next) => { try { const application = await Application.findById(req.params.id).populate('job'); if (!application || String(application.job.owner) !== String(req.user.id)) return res.status(404).json({ success: false, message: 'Application not found' }); application.status = req.body.status || application.status; application.recruiterNotes = req.body.recruiterNotes ?? application.recruiterNotes; await application.save(); res.json({ success: true, application }); } catch (error) { next(error); } });
+router.get('/received.csv', requireAuth, async (req, res, next) => { try { const jobs = await Job.find({ owner: req.user.id }).select('_id'); const applications = await Application.find({ job: { $in: jobs.map((job) => job._id) } }).populate('job', 'title').populate('candidate', 'name email'); const rows = ['Job,Candidate,Email,Status,Applied At', ...applications.map((item) => [item.job.title, item.candidate?.name || item.candidateName, item.candidate?.email || item.candidateEmail, item.status, item.createdAt.toISOString()].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))]; res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', 'attachment; filename="careertrack-applications.csv"'); res.send(rows.join('\n')); } catch (error) { next(error); } });
+router.post('/:jobId', optionalAuth, upload.single('resume'), async (req, res, next) => { try {
+  const job = await Job.findOne({ _id: req.params.jobId, status: 'published', $or: [{ deadline: null }, { deadline: { $gte: new Date() } }] });
+  if (!job) return res.status(404).json({ success: false, message: 'Job is not available' });
+  const email = String(req.body.email || req.user?.email || '').trim().toLowerCase();
+  const name = String(req.body.name || req.user?.name || '').trim();
+  const phone = String(req.body.phone || req.user?.phone || '').trim();
+  const education = String(req.body.education || req.user?.education || '').trim();
+  const experience = String(req.body.experience || req.user?.experience || '').trim();
+  const technicalSkills = String(req.body.technicalSkills || req.user?.skills || '').trim();
+  const coverLetter = String(req.body.coverLetter || '').trim();
+  if (!name || !email || !phone || !education || !experience || !technicalSkills || !coverLetter) return res.status(400).json({ success: false, message: 'Name, email, phone, education, experience, skills and cover letter are required' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+  if (!/^[+\d][\d\s().-]{6,}$/.test(phone)) return res.status(400).json({ success: false, message: 'Enter a valid phone number' });
+  if (!req.file) return res.status(400).json({ success: false, message: 'PDF or DOCX resume is required' });
+  const existing = await Application.findOne({ job: job._id, candidateEmail: email });
+  if (existing) return res.status(409).json({ success: false, message: 'You have already applied to this job' });
+  const application = await Application.create({ job: job._id, candidate: req.user?.id, candidateName: name, candidateEmail: email, phone, education, experience, technicalSkills, coverLetter, resumeUrl: req.file.filename });
+  res.status(201).json({ success: true, application });
+} catch (error) { next(error); } });
+export default router;
+

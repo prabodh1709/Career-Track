@@ -1,0 +1,8 @@
+import { Router } from 'express'; import JobAlert from '../models/JobAlert.js'; import Job from '../models/Job.js'; import { requireAuth } from '../middleware/auth.js'; import { escapeRegex } from '../utils.js';
+const router = Router(); router.use(requireAuth);
+router.get('/', async (req, res, next) => { try { res.json({ success: true, alerts: await JobAlert.find({ user: req.user.id }).sort({ createdAt: -1 }) }); } catch (error) { next(error); } });
+router.post('/', async (req, res, next) => { try { const alert = await JobAlert.create({ ...req.body, user: req.user.id }); res.status(201).json({ success: true, alert }); } catch (error) { next(error); } });
+router.delete('/:id', async (req, res, next) => { try { await JobAlert.findOneAndDelete({ _id: req.params.id, user: req.user.id }); res.json({ success: true }); } catch (error) { next(error); } });
+router.get('/:id/matches', async (req, res, next) => { try { const alert = await JobAlert.findOne({ _id: req.params.id, user: req.user.id }); if (!alert) return res.status(404).json({ success: false, message: 'Alert not found' }); const query = { status: 'published', $and: [{ $or: [{ deadline: null }, { deadline: { $gte: new Date() } }] }] }; if (alert.keyword) { const keyword = escapeRegex(alert.keyword); query.$or = [{ title: new RegExp(keyword, 'i') }, { company: new RegExp(keyword, 'i') }, { skills: new RegExp(keyword, 'i') }]; } if (alert.location) query.location = new RegExp(escapeRegex(alert.location), 'i'); if (alert.employmentType) query.employmentType = alert.employmentType; res.json({ success: true, jobs: await Job.find(query).sort({ createdAt: -1 }).limit(50) }); } catch (error) { next(error); } });
+export default router;
+

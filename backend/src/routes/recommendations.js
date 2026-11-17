@@ -1,0 +1,5 @@
+import { Router } from 'express'; import User from '../models/User.js'; import Job from '../models/Job.js'; import { requireAuth } from '../middleware/auth.js';
+const router = Router();
+router.get('/', requireAuth, async (req, res, next) => { try { const user = await User.findById(req.user.id); const jobs = await Job.find({ status: 'published' }).sort({ createdAt: -1 }).limit(100); const role = (user.preferredRole || '').toLowerCase(); const location = (user.preferredLocation || '').toLowerCase(); const skills = (user.skills || []).map((skill) => skill.toLowerCase()); const ranked = jobs.map((job) => { const text = `${job.title} ${job.company} ${job.location} ${(job.skills || []).join(' ')}`.toLowerCase(); let score = 0; if (role && text.includes(role)) score += 5; if (location && text.includes(location)) score += 3; skills.forEach((skill) => { if (text.includes(skill)) score += 2; }); return { job, score }; }).sort((a, b) => b.score - a.score || new Date(b.job.createdAt) - new Date(a.job.createdAt)).slice(0, 20).map((entry) => entry.job); res.json({ success: true, jobs: ranked }); } catch (error) { next(error); } });
+export default router;
+

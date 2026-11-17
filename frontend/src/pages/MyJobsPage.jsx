@@ -1,0 +1,6 @@
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { api } from '../lib/api.js';
+import StatusMessage from '../components/StatusMessage.jsx';
+export default function MyJobsPage() { const [jobs, setJobs] = useState([]); const [error, setError] = useState(''); useEffect(() => { api('/jobs/mine').then((data) => setJobs(data.jobs)).catch((err) => setError(err.message)); }, []); return <section className="section page-section"><div className="container"><div className="dashboard-heading"><div><p className="eyebrow">YOUR WORKSPACE</p><h1 className="page-title">My jobs.</h1></div><Link className="button button-primary" to="/post-job">Post a job <span>+</span></Link></div>{error && <StatusMessage type="error" title="Could not load jobs">{error}</StatusMessage>}{!error && !jobs.length && <StatusMessage title="No jobs posted yet.">Create your first opportunity and start receiving applications.</StatusMessage>}<div className="job-list">{jobs.map((job) => <article className="job-row" key={job._id}><div><span className="job-status">{job.status}</span><h3>{job.title}</h3><p>{job.company} · {job.location}</p></div><span className="job-date">{new Date(job.createdAt).toLocaleDateString()}</span></article>)}</div></div></section>; }
+
